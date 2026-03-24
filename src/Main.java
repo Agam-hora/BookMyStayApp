@@ -1,16 +1,15 @@
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Book My Stay App
  * -----------------------------------------
- * Use Case 3: Centralized Room Inventory Management
+ * Use Case 4: Room Search & Availability Check
  *
- * This program demonstrates how to manage room availability
- * using a centralized HashMap to ensure consistency and scalability.
+ * Demonstrates read-only access to centralized inventory
+ * and filtering available rooms without modifying system state.
  *
  * @author YourName
- * @version 3.1
+ * @version 4.0
  */
 
 // -------- Abstract Room Class --------
@@ -78,77 +77,75 @@ class SuiteRoom extends Room {
     }
 }
 
-// -------- Inventory Class --------
+// -------- Inventory (Read-Only Access) --------
 class RoomInventory {
 
-    // Centralized storage
     private Map<String, Integer> inventory;
 
-    // Constructor initializes inventory
     public RoomInventory() {
         inventory = new HashMap<>();
-
-        // Initial availability
         inventory.put("Single Room", 5);
-        inventory.put("Double Room", 3);
+        inventory.put("Double Room", 0); // Example: not available
         inventory.put("Suite Room", 2);
     }
 
-    // Get availability
+    // Read-only access
     public int getAvailability(String roomType) {
         return inventory.getOrDefault(roomType, 0);
     }
 
-    // Update availability
-    public void updateAvailability(String roomType, int count) {
-        inventory.put(roomType, count);
+    // Return full map (read-only usage)
+    public Map<String, Integer> getAllAvailability() {
+        return inventory;
     }
+}
 
-    // Display inventory
-    public void displayInventory() {
-        System.out.println("\n---- Current Room Inventory ----");
-        for (Map.Entry<String, Integer> entry : inventory.entrySet()) {
-            System.out.println(entry.getKey() + " : " + entry.getValue());
+// -------- Search Service --------
+class RoomSearchService {
+
+    public void searchAvailableRooms(List<Room> rooms, RoomInventory inventory) {
+
+        System.out.println("\n---- Available Rooms ----\n");
+
+        for (Room room : rooms) {
+
+            int available = inventory.getAvailability(room.getRoomType());
+
+            // Defensive check: show only available rooms
+            if (available > 0) {
+                room.displayDetails();
+                System.out.println("Available : " + available);
+                System.out.println("------------------------------------");
+            }
         }
     }
 }
 
 // -------- Main Class --------
-public class UseCase3InventorySetup {
+public class UseCase4RoomSearch {
 
     public static void main(String[] args) {
 
         System.out.println("======================================");
         System.out.println("        Book My Stay App              ");
         System.out.println("======================================");
-        System.out.println("Version: v3.1\n");
+        System.out.println("Version: v4.0\n");
 
-        // Create room objects
-        Room single = new SingleRoom();
-        Room doubleRoom = new DoubleRoom();
-        Room suite = new SuiteRoom();
+        // Room objects
+        List<Room> rooms = new ArrayList<>();
+        rooms.add(new SingleRoom());
+        rooms.add(new DoubleRoom());
+        rooms.add(new SuiteRoom());
 
-        // Initialize inventory
+        // Inventory
         RoomInventory inventory = new RoomInventory();
 
-        // Display room details with centralized availability
-        System.out.println("---- Room Details & Availability ----\n");
+        // Search Service
+        RoomSearchService searchService = new RoomSearchService();
 
-        single.displayDetails();
-        System.out.println("Available : " + inventory.getAvailability(single.getRoomType()));
-        System.out.println("------------------------------------");
+        // Perform search (READ-ONLY)
+        searchService.searchAvailableRooms(rooms, inventory);
 
-        doubleRoom.displayDetails();
-        System.out.println("Available : " + inventory.getAvailability(doubleRoom.getRoomType()));
-        System.out.println("------------------------------------");
-
-        suite.displayDetails();
-        System.out.println("Available : " + inventory.getAvailability(suite.getRoomType()));
-        System.out.println("------------------------------------");
-
-        // Display full inventory
-        inventory.displayInventory();
-
-        System.out.println("\nThank you for using Book My Stay App!");
+        System.out.println("\nSearch completed. (No inventory was modified)");
     }
 }
