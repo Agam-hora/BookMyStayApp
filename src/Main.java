@@ -1,6 +1,37 @@
 import java.util.*;
 
-// Add-On Service class
+// Reservation class (from UC6 concept)
+class Reservation {
+    private String reservationId;
+    private String roomType;
+    private String roomId;
+
+    public Reservation(String reservationId, String roomType, String roomId) {
+        this.reservationId = reservationId;
+        this.roomType = roomType;
+        this.roomId = roomId;
+    }
+
+    public String getReservationId() {
+        return reservationId;
+    }
+
+    public String getRoomType() {
+        return roomType;
+    }
+
+    public String getRoomId() {
+        return roomId;
+    }
+
+    public String toString() {
+        return "ReservationID=" + reservationId +
+                ", RoomType=" + roomType +
+                ", RoomID=" + roomId;
+    }
+}
+
+// Add-On Service (from UC7)
 class AddOnService {
     private String name;
     private double cost;
@@ -10,91 +41,101 @@ class AddOnService {
         this.cost = cost;
     }
 
-    public String getName() {
-        return name;
-    }
-
     public double getCost() {
         return cost;
     }
 
     public String toString() {
-        return name + " (₹" + cost + ")";
+        return name + "(₹" + cost + ")";
     }
 }
 
-// Manager class for handling services
+// Add-On Manager (UC7)
 class AddOnServiceManager {
+    private Map<String, List<AddOnService>> servicesMap = new HashMap<>();
 
-    // Map: Reservation ID -> List of Services
-    private Map<String, List<AddOnService>> reservationServices = new HashMap<>();
-
-    // Add service to a reservation
     public void addService(String reservationId, AddOnService service) {
-        reservationServices.putIfAbsent(reservationId, new ArrayList<>());
-        reservationServices.get(reservationId).add(service);
+        servicesMap.putIfAbsent(reservationId, new ArrayList<>());
+        servicesMap.get(reservationId).add(service);
     }
 
-    // Get services for a reservation
     public List<AddOnService> getServices(String reservationId) {
-        return reservationServices.getOrDefault(reservationId, new ArrayList<>());
+        return servicesMap.getOrDefault(reservationId, new ArrayList<>());
     }
 
-    // Calculate total additional cost
-    public double calculateTotalCost(String reservationId) {
+    public double getTotalCost(String reservationId) {
         double total = 0;
-        for (AddOnService service : getServices(reservationId)) {
-            total += service.getCost();
+        for (AddOnService s : getServices(reservationId)) {
+            total += s.getCost();
         }
         return total;
     }
+}
 
-    // Display services
-    public void displayServices(String reservationId) {
-        List<AddOnService> services = getServices(reservationId);
+// Booking History (UC8)
+class BookingHistory {
+    private List<Reservation> history = new ArrayList<>();
 
-        if (services.isEmpty()) {
-            System.out.println("No add-on services selected.");
-            return;
-        }
+    public void addReservation(Reservation r) {
+        history.add(r); // maintains order
+    }
 
-        System.out.println("Add-On Services for Reservation " + reservationId + ":");
-        for (AddOnService s : services) {
-            System.out.println("- " + s);
-        }
-
-        System.out.println("Total Add-On Cost: ₹" + calculateTotalCost(reservationId));
+    public List<Reservation> getAllReservations() {
+        return history;
     }
 }
 
-// Main class
-public class UseCase7AddOnServiceSelection {
+// Reporting Service (UC8)
+class BookingReportService {
+
+    public void generateReport(List<Reservation> history, AddOnServiceManager manager) {
+
+        System.out.println("\n📊 BOOKING REPORT");
+        System.out.println("===================================");
+
+        for (Reservation r : history) {
+            System.out.println(r);
+
+            List<AddOnService> services = manager.getServices(r.getReservationId());
+
+            if (!services.isEmpty()) {
+                System.out.println("  Services: " + services);
+                System.out.println("  Add-On Cost: ₹" + manager.getTotalCost(r.getReservationId()));
+            } else {
+                System.out.println("  Services: None");
+            }
+
+            System.out.println("-----------------------------------");
+        }
+    }
+}
+
+// Main Class
+public class UseCase8BookingHistoryReport {
 
     public static void main(String[] args) {
 
+        // Simulating UC6 confirmed bookings
+        Reservation r1 = new Reservation("RES-101", "Single", "S-1A");
+        Reservation r2 = new Reservation("RES-102", "Double", "D-2B");
+        Reservation r3 = new Reservation("RES-103", "Suite", "SU-1C");
+
+        // Booking History (UC8)
+        BookingHistory history = new BookingHistory();
+        history.addReservation(r1);
+        history.addReservation(r2);
+        history.addReservation(r3);
+
+        // Add-On Services (UC7)
         AddOnServiceManager manager = new AddOnServiceManager();
 
-        // Sample reservation IDs (from UC6)
-        String reservation1 = "RES-101";
-        String reservation2 = "RES-102";
+        manager.addService("RES-101", new AddOnService("Breakfast", 500));
+        manager.addService("RES-101", new AddOnService("Spa", 1500));
 
-        // Create services
-        AddOnService breakfast = new AddOnService("Breakfast", 500);
-        AddOnService spa = new AddOnService("Spa", 1500);
-        AddOnService airportPickup = new AddOnService("Airport Pickup", 800);
+        manager.addService("RES-102", new AddOnService("Airport Pickup", 800));
 
-        // Guest selects services
-        manager.addService(reservation1, breakfast);
-        manager.addService(reservation1, spa);
-
-        manager.addService(reservation2, airportPickup);
-        manager.addService(reservation2, breakfast);
-
-        // Display results
-        System.out.println("\n--- Reservation 1 ---");
-        manager.displayServices(reservation1);
-
-        System.out.println("\n--- Reservation 2 ---");
-        manager.displayServices(reservation2);
+        // Reporting (UC8)
+        BookingReportService reportService = new BookingReportService();
+        reportService.generateReport(history.getAllReservations(), manager);
     }
 }
